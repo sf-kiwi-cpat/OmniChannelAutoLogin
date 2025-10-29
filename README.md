@@ -60,12 +60,6 @@ To configure the component with the correct presence status, you need to find th
 4. **Run the same SOQL query** as above
 5. **Copy the Id** of your desired status
 
-### Method 4: Using Salesforce CLI
-
-```bash
-sf data query --query "SELECT Id, DeveloperName, MasterLabel FROM ServicePresenceStatus WHERE IsActive = true" --target-org your-org-alias
-```
-
 ## Deployment Instructions
 
 ### Step 1: Deploy the Component
