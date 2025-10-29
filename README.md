@@ -64,7 +64,7 @@ To configure the component with the correct presence status, you need to find th
 
 ### Step 1: Deploy the Component
 
-Deploy the component to your Salesforce org:
+Deploy the component to your Salesforce org - either manually create the component in the Developer console and copy and paste the code, or you can download and deploy with your favorite IDE, however you usually deploy Aura components:
 
 ```bash
 # Deploy to your org
@@ -73,6 +73,7 @@ sf project deploy start --target-org your-org-alias
 # Or if using legacy sfdx commands
 sfdx force:source:deploy --targetusername your-org-alias
 ```
+
 
 ### Step 2: Add as Utility Item in App Manager
 
