@@ -17,6 +17,12 @@
             return;
         }
         
+        // Check if this is a page refresh or new window
+        if (this.isPageRefresh()) {
+            console.log("Page refresh detected - skipping auto-login");
+            return;
+        }
+        
         console.log("AutoLoginOmniChannel is ready to monitor status changes");
         
         // Attempt auto-login after a short delay to ensure component is fully loaded
@@ -26,6 +32,31 @@
         setTimeout(function() {
             self.attemptAutoLogin(component);
         }, autoLoginDelay);
+    },
+    
+    isPageRefresh: function() {
+        // Check if this is a page refresh by looking for the performance navigation type
+        if (typeof performance !== 'undefined' && performance.navigation) {
+            // For older browsers
+            return performance.navigation.type === 1; // TYPE_RELOAD
+        } else if (typeof performance !== 'undefined' && performance.getEntriesByType) {
+            // For newer browsers
+            var navigationEntries = performance.getEntriesByType('navigation');
+            if (navigationEntries.length > 0) {
+                return navigationEntries[0].type === 'reload';
+            }
+        }
+        
+        // Fallback: check session storage for a fresh load marker
+        var freshLoadMarker = sessionStorage.getItem('omniAutoLoginFreshLoad');
+        if (freshLoadMarker) {
+            // Marker exists, this is a refresh - don't clear it
+            return true;
+        }
+        
+        // No marker exists, this is a fresh load - set the marker
+        sessionStorage.setItem('omniAutoLoginFreshLoad', 'true');
+        return false;
     },
     
     applyInputParameters: function(component) {
@@ -156,54 +187,28 @@
         var self = this;
         
         return new Promise(function(resolve, reject) {
-            // First try getServicePresenceStatus to check if user is already logged in
-            // This is more reliable for checking login status
-            omniToolkit.getServicePresenceStatus()
-                .then(function(result) {
-                    console.log("getServicePresenceStatus result (checking login status):", result);
-                    // If we can get presence status, user is logged in
-                    // Check if the result indicates an active session
-                    if (result && (result.isLoggedIn || result.statusId || result.statusName)) {
-                        console.log("User is already logged in with status:", result.statusName || "Unknown");
+            // Use getServicePresenceStatusId to check if user is already logged in
+            // This is the reliable method for checking login status
+            omniToolkit.getServicePresenceStatusId()
+                .then(function(statusId) {
+                    console.log("getServicePresenceStatusId result (checking login status):", statusId);
+                    // If we can get a status ID, user is logged in
+                    if (statusId) {
+                        console.log("User is already logged in to Omni-Channel with status ID:", statusId);
                         resolve(true);
                     } else {
-                        console.log("User is not logged in - no active presence status");
+                        console.log("User is not logged in - no active status ID");
                         resolve(false);
                     }
                 })
                 .catch(function(error) {
-                    console.log("getServicePresenceStatus failed, trying fallback method:", error);
-                    // Fallback to getAgentWorks if getServicePresenceStatus fails
-                    return self.checkLoginStatusFallback(omniToolkit);
-                })
-                .then(function(fallbackResult) {
-                    if (fallbackResult !== undefined) {
-                        resolve(fallbackResult);
-                    }
-                })
-                .catch(function(error) {
-                    console.log("All login status checks failed (user not logged in):", error);
-                    // If all methods fail, assume user is not logged in
+                    console.log("getServicePresenceStatusId failed (user not logged in):", error);
+                    // If getServicePresenceStatusId fails, assume user is not logged in
                     resolve(false);
                 });
         });
     },
     
-    checkLoginStatusFallback: function(omniToolkit) {
-        return new Promise(function(resolve, reject) {
-            // Fallback method using getAgentWorks
-            omniToolkit.getAgentWorks()
-                .then(function(result) {
-                    console.log("getAgentWorks fallback result:", result);
-                    // If we can get agent works, user is logged in
-                    resolve(true);
-                })
-                .catch(function(error) {
-                    console.log("getAgentWorks fallback failed:", error);
-                    resolve(false);
-                });
-        });
-    },
     
     performLogin: function(component) {
         var omniToolkit = component.find("omniToolkit");
@@ -221,17 +226,15 @@
                 })
                 .catch(function(error) {
                     console.error("Error setting Omni-Channel status:", error);
-                    // Try to get available statuses and use the first available one
-                    return omniToolkit.getServicePresenceStatuses();
+                    // Try to get current status ID and use that
+                    return omniToolkit.getServicePresenceStatusId();
                 })
-                .then(function(statuses) {
-                    if (statuses && statuses.length > 0) {
-                        // Use the first available status
-                        var firstStatus = statuses[0];
-                        console.log("Using first available status:", firstStatus);
-                        return omniToolkit.setServicePresenceStatus({ statusId: firstStatus.id });
+                .then(function(currentStatusId) {
+                    if (currentStatusId) {
+                        console.log("Using current status ID:", currentStatusId);
+                        return omniToolkit.setServicePresenceStatus({ statusId: currentStatusId });
                     } else {
-                        throw new Error("No available statuses found");
+                        throw new Error("No current status ID found");
                     }
                 })
                 .then(function(result) {
