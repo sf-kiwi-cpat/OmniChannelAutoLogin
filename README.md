@@ -45,9 +45,8 @@ To configure the component with the correct presence status, you need to find th
 2. **Go to Query Editor** tab
 3. **Run this SOQL query**:
    ```sql
-   SELECT Id, DeveloperName, MasterLabel, IsActive 
+   SELECT Id, DeveloperName, MasterLabel 
    FROM ServicePresenceStatus 
-   WHERE IsActive = true 
    ORDER BY MasterLabel
    ```
 4. **Find your desired status** (e.g., "Busy", "Available", "Away")
