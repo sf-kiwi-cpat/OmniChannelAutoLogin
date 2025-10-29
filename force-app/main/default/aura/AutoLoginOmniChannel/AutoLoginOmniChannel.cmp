@@ -1,0 +1,34 @@
+<aura:component implements="lightning:backgroundUtilityItem" access="global">
+    <!-- Component Attributes -->
+    <!-- State attributes -->
+    <aura:attribute name="isProcessing" type="Boolean" default="false" description="Processing state" />
+    <aura:attribute name="lastLoginTime" type="DateTime" description="Last time auto-login was attempted" />
+    <aura:attribute name="loginAttempts" type="Integer" default="0" description="Number of login attempts" />
+    <aura:attribute name="isLoggedIn" type="Boolean" default="false" description="Whether user is currently logged in to Omni-Channel" />
+    
+    <!-- Input Parameters for App Manager Configuration -->
+    <aura:attribute name="inputStatusId" type="String" default="0N58c000000092H" description="Status ID for Available presence status (configurable in App Manager)" />
+    <aura:attribute name="inputIsEnabled" type="Boolean" default="true" description="Whether auto-login is enabled (configurable in App Manager)" />
+    <aura:attribute name="inputShowSuccessToast" type="Boolean" default="true" description="Whether to show success toast messages (configurable in App Manager)" />
+    <aura:attribute name="inputAutoLoginDelay" type="Integer" default="2000" description="Delay in milliseconds before attempting auto-login (configurable in App Manager)" />
+    
+    <!-- Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <!-- OmniToolkit API Event Handlers -->
+    <aura:handler event="lightning:omniChannelStatusChanged" action="{!c.handleOmniChannelStatusChanged}" />
+    
+    <!-- Include Omni Toolkit API -->
+    <lightning:omniToolkitAPI aura:id="omniToolkit" />
+    
+    <!-- Toast for notifications -->
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    
+    <!-- Hidden component - no UI needed for background operation -->
+    <div class="hidden-component">
+        <!-- This component runs in the background without visible UI -->
+        <aura:if isTrue="{!v.isProcessing}">
+            <lightning:spinner size="small" />
+        </aura:if>
+    </div>
+</aura:component>

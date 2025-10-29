@@ -1,0 +1,15 @@
+<aura:documentation>
+    <aura:description>
+        AutoLoginOmniChannel is a background Aura component that automatically logs users into Omni-Channel when the component is ready and monitors for logout events to re-login users.
+        
+        This component:
+        - Automatically attempts to log in to Omni-Channel when initialized
+        - Listens to the 'lightning:omniChannelStatusChanged' event
+        - Monitors for logout events (detected by empty channels array)
+        - Automatically re-logs in users when they appear to be logged out
+        - Provides configurable login delay and success toast notifications
+        - Tracks login attempts and status
+        
+        The component runs as a background utility item without any visible UI and automatically manages Omni-Channel login state.
+    </aura:description>
+</aura:documentation>
