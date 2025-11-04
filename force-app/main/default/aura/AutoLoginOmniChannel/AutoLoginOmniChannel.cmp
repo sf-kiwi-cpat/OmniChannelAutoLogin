@@ -1,4 +1,4 @@
-<aura:component implements="lightning:backgroundUtilityItem" access="global">
+<aura:component controller="AutoLoginOmniChannelController" implements="lightning:backgroundUtilityItem" access="global">
     <!-- Component Attributes -->
     <!-- State attributes -->
     <aura:attribute name="isProcessing" type="Boolean" default="false" description="Processing state" />
@@ -10,7 +10,7 @@
     <aura:attribute name="inputStatusId" type="String" default="0N58c000000092H" description="Status ID for Available presence status (configurable in App Manager)" />
     <aura:attribute name="inputIsEnabled" type="Boolean" default="true" description="Whether auto-login is enabled (configurable in App Manager)" />
     <aura:attribute name="inputShowSuccessToast" type="Boolean" default="true" description="Whether to show success toast messages (configurable in App Manager)" />
-    <aura:attribute name="inputAutoLoginDelay" type="Integer" default="2000" description="Delay in milliseconds before attempting auto-login (configurable in App Manager)" />
+    <aura:attribute name="inputAutoLoginDelay" type="Integer" default="5000" description="Delay in milliseconds before attempting auto-login (configurable in App Manager)" />
     
     <!-- Handlers -->
     <aura:handler name="init" value="{!this}" action="{!c.doInit}" />

@@ -17,46 +17,66 @@
             return;
         }
         
-        // Check if this is a page refresh or new window
-        if (this.isPageRefresh()) {
-            console.log("Page refresh detected - skipping auto-login");
-            return;
-        }
-        
-        console.log("AutoLoginOmniChannel is ready to monitor status changes");
-        
-        // Attempt auto-login after a short delay to ensure component is fully loaded
+        // Check if user has active presence - if so, skip auto-login
         var self = this;
-        var autoLoginDelay = component.get("v.inputAutoLoginDelay") || 2000;
-        
-        setTimeout(function() {
-            self.attemptAutoLogin(component);
-        }, autoLoginDelay);
+        this.checkActivePresence(component)
+            .then(function(hasActivePresence) {
+                if (hasActivePresence) {
+                    console.log("Active presence detected - skipping auto-login");
+                    return;
+                }
+                
+                console.log("AutoLoginOmniChannel is ready to monitor status changes");
+                
+                // Attempt auto-login after a short delay to ensure component is fully loaded
+                var autoLoginDelay = component.get("v.inputAutoLoginDelay") || 2000;
+                
+                setTimeout(function() {
+                    self.attemptAutoLogin(component);
+                }, autoLoginDelay);
+            })
+            .catch(function(error) {
+                console.error("Error checking active presence:", error);
+                // On error, proceed with auto-login (fail open)
+                console.log("AutoLoginOmniChannel is ready to monitor status changes");
+                
+                var autoLoginDelay = component.get("v.inputAutoLoginDelay") || 2000;
+                
+                setTimeout(function() {
+                    self.attemptAutoLogin(component);
+                }, autoLoginDelay);
+            });
     },
     
-    isPageRefresh: function() {
-        // Check if this is a page refresh by looking for the performance navigation type
-        if (typeof performance !== 'undefined' && performance.navigation) {
-            // For older browsers
-            return performance.navigation.type === 1; // TYPE_RELOAD
-        } else if (typeof performance !== 'undefined' && performance.getEntriesByType) {
-            // For newer browsers
-            var navigationEntries = performance.getEntriesByType('navigation');
-            if (navigationEntries.length > 0) {
-                return navigationEntries[0].type === 'reload';
-            }
-        }
+    checkActivePresence: function(component) {
+        // Check UserServicePresence table for active presence record
+        var self = this;
         
-        // Fallback: check session storage for a fresh load marker
-        var freshLoadMarker = sessionStorage.getItem('omniAutoLoginFreshLoad');
-        if (freshLoadMarker) {
-            // Marker exists, this is a refresh - don't clear it
-            return true;
-        }
-        
-        // No marker exists, this is a fresh load - set the marker
-        sessionStorage.setItem('omniAutoLoginFreshLoad', 'true');
-        return false;
+        return new Promise(function(resolve, reject) {
+            // Create action to call Apex controller method
+            var action = component.get("c.checkActivePresence");
+            
+            action.setCallback(this, function(response) {
+                var state = response.getState();
+                
+                if (state === "SUCCESS") {
+                    var hasActivePresence = response.getReturnValue();
+                    console.log("Active presence check result:", hasActivePresence);
+                    resolve(hasActivePresence);
+                } else if (state === "ERROR") {
+                    var errors = response.getError();
+                    console.error("Error checking active presence:", errors);
+                    // Resolve with false on error (fail open - allow auto-login)
+                    resolve(false);
+                } else {
+                    console.error("Unknown state when checking active presence:", state);
+                    // Resolve with false on unknown state (fail open)
+                    resolve(false);
+                }
+            });
+            
+            $A.enqueueAction(action);
+        }.bind(this));
     },
     
     applyInputParameters: function(component) {
@@ -84,7 +104,6 @@
     },
     
     handleStatusChange: function(component, event, helper) {
-        var self = this;
         if (!event || !event.getParams()) {
             console.log("No event received");
             return;
@@ -93,35 +112,18 @@
         var eventParams = event.getParams();
         var newStatus = eventParams.statusName || eventParams.status || "Unknown";
         var channels = eventParams.channels || [];
-        var isEnabled = component.get("v.inputIsEnabled");
+        var statusId = eventParams.statusId;
         
         console.log("Status changed to:", newStatus);
         console.log("Channels:", channels);
+        console.log("Status ID:", statusId);
         
-        // Check if component is enabled
-        if (!isEnabled) {
-            console.log("AutoLoginOmniChannel is disabled, ignoring status change");
-            return;
-        }
-        
-        // Update login status based on channels
-        var isLoggedIn = channels && channels.length > 0;
+        // If we're receiving a status change event, the user must already be logged in
+        // Check status ID to determine login status (channels can be empty and still be logged in)
+        var isLoggedIn = statusId !== null && statusId !== undefined && statusId !== '';
         component.set("v.isLoggedIn", isLoggedIn);
         
-        // If user is not logged in and we haven't attempted login recently, try to login
-        if (!isLoggedIn) {
-            var lastLoginTime = component.get("v.lastLoginTime");
-            var now = new Date();
-            var timeSinceLastLogin = lastLoginTime ? (now - new Date(lastLoginTime)) : Infinity;
-            
-            // Only attempt login if it's been more than 30 seconds since last attempt
-            if (timeSinceLastLogin > 30000) {
-                console.log("User appears to be logged out, attempting auto-login");
-                self.attemptAutoLogin(component);
-            }
-        } else {
-            console.log("User is already logged in to Omni-Channel");
-        }
+        console.log("User login status updated:", isLoggedIn ? "logged in" : "logged out");
     },
     
     attemptAutoLogin: function(component) {
@@ -212,7 +214,7 @@
     
     performLogin: function(component) {
         var omniToolkit = component.find("omniToolkit");
-        var statusId = component.get("v.inputStatusId") || "0N58c000000092H";
+        var statusId = component.get("v.inputStatusId");
         
         return new Promise(function(resolve, reject) {
             // Use the Omni Toolkit API to set presence status to Available

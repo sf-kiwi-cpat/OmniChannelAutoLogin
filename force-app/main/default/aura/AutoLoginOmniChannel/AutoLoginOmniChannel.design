@@ -3,5 +3,5 @@
     <design:attribute name="inputStatusId" label="Status ID" description="Status ID for Available presence status" />
     <design:attribute name="inputIsEnabled" label="Is Enabled" description="Whether auto-login is enabled or not" />
     <design:attribute name="inputShowSuccessToast" label="Show Success Toast" description="Whether to show success toast messages or not" />
-    <design:attribute name="inputAutoLoginDelay" label="Auto Login Delay (ms)" description="Delay in milliseconds before attempting auto-login" />
+    <design:attribute name="inputAutoLoginDelay" label="Auto Login Delay (ms)" description="Delay in milliseconds before attempting auto-login. Recommend to be 5000 or more to prevent logging in on refreshes" />
 </design:component>
