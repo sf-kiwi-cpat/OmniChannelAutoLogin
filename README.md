@@ -88,6 +88,7 @@ To configure the component with the correct presence status, you need to find th
 ## Deployment Instructions
 
 ### Step 1: Deploy the Component and Apex Classes
+If you checkout this repository, then you can deply using Salesforce DX, as instructed below. Alternatively, you can manually create the components and classes in the Developer Console, and copy and paste the code in, starting with the Apex classes. Ensure you keep the naming consistent.
 
 Deploy both the Aura component and the Apex classes to your Salesforce org:
 
