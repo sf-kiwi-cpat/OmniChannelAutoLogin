@@ -30,6 +30,8 @@ The component uses an Apex controller (`AutoLoginOmniChannelController`) to chec
    - Calls Apex method `checkActivePresence()` to query UserServicePresence for records where `UserId = current user` and `IsCurrentState = true`
    - If an active presence record exists, auto-login is skipped
    - If no active presence exists, waits for the configured delay, then attempts auto-login
+   - If `inputStatusId` is not set, calls Apex method `getAwayStatusId()` to lookup the first ServicePresenceStatus with `IsAway = true`
+   - Uses the found away status ID, or falls back to a default if none is found
    - Ensures refresh and new windows are supported, without overriding the previous Omni-Channel state.
 
 2. **On Status Change Events**:
@@ -37,10 +39,15 @@ The component uses an Apex controller (`AutoLoginOmniChannelController`) to chec
    - Updates component state based on the status ID from the event
    - Does not attempt auto-login (if status change event fires, user is already logged in)
 
-3. **Apex Security**:
-   - The Apex controller includes CRUD permission checks before querying UserServicePresence
+3. **Status ID Lookup**:
+   - If `inputStatusId` is not configured, the component automatically queries ServicePresenceStatus for the first record with `IsAway = true`
+   - This allows the component to work without manual configuration in most orgs
+   - Falls back to a default status ID if no away status is found
+
+4. **Apex Security**:
+   - The Apex controller includes CRUD permission checks before querying UserServicePresence and ServicePresenceStatus
    - Verifies object-level and field-level access permissions
-   - Fails gracefully (allows auto-login) if permissions are insufficient
+   - Fails gracefully (allows auto-login with fallback) if permissions are insufficient
 
 ## Prerequisites
 
@@ -50,11 +57,13 @@ Before deploying this component, ensure you have:
 2. **Service Cloud license** with Omni-Channel access
 3. **Appropriate permissions** to deploy Aura components and Apex classes
 4. **Admin access** to configure utility items in App Manager
-5. **Read access** to UserServicePresence object for the component users
+5. **Read access** to UserServicePresence and ServicePresenceStatus objects for the component users
 
-## Getting the Presence Status ID
+## Getting the Presence Status ID (Optional)
 
-To configure the component with the correct presence status, you need to find the ID of the status you want to use for auto-login:
+**Note**: The `inputStatusId` parameter is optional. If not set, the component will automatically use the first ServicePresenceStatus with `IsAway=true` found in your org. You only need to manually configure this if you want to use a specific status that is not an away status.
+
+To manually configure the component with a specific presence status, you need to find the ID of the status you want to use for auto-login:
 
 ### Method 1: Using Setup (Easiest - Recommended)
 
@@ -114,7 +123,7 @@ sfdx force:source:deploy --targetusername your-org-alias
 7. **Click "Add Utility Item"**
    - **Name**: `Auto Login OmniChannel` (or your preferred name)
 8. **Configure the component parameters**:
-   - **inputStatusId**: Paste the presence status ID you found earlier
+   - **inputStatusId**: (Optional) Paste the presence status ID you found earlier. If not set, the component will automatically use the first ServicePresenceStatus with IsAway=true found in the org.
    - **inputIsEnabled**: `true` (to enable auto-login)
    - **inputShowSuccessToast**: `true` (to show success messages)
    - **inputAutoLoginDelay**: `2000` (2 second delay before login attempt)
@@ -148,7 +157,7 @@ Users must have access to the `AutoLoginOmniChannelController` Apex class for th
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `inputStatusId` | String | `0N58c000000092H` | The ID of the presence status to use for auto-login |
+| `inputStatusId` | String | (auto-detected) | The ID of the presence status to use for auto-login. If not set, the component will automatically lookup and use the first ServicePresenceStatus with IsAway=true found in the org. |
 | `inputIsEnabled` | Boolean | `true` | Whether auto-login is enabled |
 | `inputShowSuccessToast` | Boolean | `true` | Whether to show success toast messages |
 | `inputAutoLoginDelay` | Integer | `2000` | Delay in milliseconds before attempting auto-login |

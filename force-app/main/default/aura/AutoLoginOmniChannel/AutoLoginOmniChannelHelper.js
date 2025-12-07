@@ -212,16 +212,56 @@
     },
     
     
-    performLogin: function(component) {
-        var omniToolkit = component.find("omniToolkit");
-        var statusId = component.get("v.inputStatusId");
+    getStatusId: function(component) {
+        var self = this;
+        var inputStatusId = component.get("v.inputStatusId");
         
+        // If inputStatusId is set, use it
+        if (inputStatusId) {
+            return Promise.resolve(inputStatusId);
+        }
+        
+        // Otherwise, lookup the first away status from the org
         return new Promise(function(resolve, reject) {
-            // Use the Omni Toolkit API to set presence status to Available
-            // This effectively logs the user into Omni-Channel
-            console.log("Attempting to set status ID:", statusId);
+            var action = component.get("c.getAwayStatusId");
             
-            omniToolkit.setServicePresenceStatus({ statusId: statusId })
+            action.setCallback(this, function(response) {
+                var state = response.getState();
+                
+                if (state === "SUCCESS") {
+                    var awayStatusId = response.getReturnValue();
+                    if (awayStatusId) {
+                        console.log("Using away status ID from org:", awayStatusId);
+                        resolve(awayStatusId);
+                    } else {
+                        console.log("No away status found in org, using default");
+                        resolve("0N58c000000092H"); // Fallback to default
+                    }
+                } else {
+                    var errors = response.getError();
+                    console.error("Error getting away status ID:", errors);
+                    // Fallback to default on error
+                    resolve("0N58c000000092H");
+                }
+            });
+            
+            $A.enqueueAction(action);
+        }.bind(this));
+    },
+    
+    performLogin: function(component) {
+        var self = this;
+        var omniToolkit = component.find("omniToolkit");
+        
+        // Get status ID (either from input or from away status lookup)
+        return this.getStatusId(component)
+            .then(function(statusId) {
+                return new Promise(function(resolve, reject) {
+                    // Use the Omni Toolkit API to set presence status
+                    // This effectively logs the user into Omni-Channel
+                    console.log("Attempting to set status ID:", statusId);
+                    
+                    omniToolkit.setServicePresenceStatus({ statusId: statusId })
                 .then(function(result) {
                     console.log("Omni-Channel status set successfully:", result);
                     resolve({ success: true, result: result });
@@ -247,7 +287,12 @@
                     console.error("All login attempts failed:", error);
                     resolve({ success: false, error: error.message || "Login failed" });
                 });
-        });
+                });
+            })
+            .catch(function(error) {
+                console.error("Error getting status ID:", error);
+                return Promise.resolve({ success: false, error: error.message || "Failed to get status ID" });
+            });
     },
     
     validateOmniToolkit: function(component, omniToolkit, notifLib) {

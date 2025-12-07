@@ -7,10 +7,10 @@
     <aura:attribute name="isLoggedIn" type="Boolean" default="false" description="Whether user is currently logged in to Omni-Channel" />
     
     <!-- Input Parameters for App Manager Configuration -->
-    <aura:attribute name="inputStatusId" type="String" default="0N58c000000092H" description="Status ID for Available presence status (configurable in App Manager)" />
+    <aura:attribute name="inputStatusId" type="String" description="Status ID for presence status (configurable in App Manager). If not set, the component will automatically use the first ServicePresenceStatus with IsAway=true found in the org." />
     <aura:attribute name="inputIsEnabled" type="Boolean" default="true" description="Whether auto-login is enabled (configurable in App Manager)" />
     <aura:attribute name="inputShowSuccessToast" type="Boolean" default="true" description="Whether to show success toast messages (configurable in App Manager)" />
-    <aura:attribute name="inputAutoLoginDelay" type="Integer" default="5000" description="Delay in milliseconds before attempting auto-login (configurable in App Manager)" />
+    <aura:attribute name="inputAutoLoginDelay" type="Integer" default="1000" description="Delay in milliseconds before attempting auto-login (configurable in App Manager)" />
     
     <!-- Handlers -->
     <aura:handler name="init" value="{!this}" action="{!c.doInit}" />

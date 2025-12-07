@@ -1,15 +1,25 @@
 <aura:documentation>
     <aura:description>
-        AutoLoginOmniChannel is a background Aura component that automatically logs users into Omni-Channel when the component is ready and monitors for logout events to re-login users.
+        AutoLoginOmniChannel is a background Aura component that automatically logs users into Omni-Channel when initialized, but only if no active presence record exists for the user.
         
         This component:
-        - Automatically attempts to log in to Omni-Channel when initialized
-        - Listens to the 'lightning:omniChannelStatusChanged' event
-        - Monitors for logout events (detected by empty channels array)
-        - Automatically re-logs in users when they appear to be logged out
+        - Checks for active presence using Apex controller (AutoLoginOmniChannelController) to query UserServicePresence table
+        - Skips auto-login if user already has an active presence record (IsCurrentState = true)
+        - Automatically attempts to log in to Omni-Channel only when no active presence is found
+        - Automatically looks up the first ServicePresenceStatus with IsAway=true if inputStatusId is not configured
+        - Supports page refreshes and new windows without overriding existing Omni-Channel state
+        - Listens to 'lightning:omniChannelStatusChanged' events to update component state
+        - Does NOT attempt auto-login on status change events (user is already logged in if event fires)
         - Provides configurable login delay and success toast notifications
         - Tracks login attempts and status
         
         The component runs as a background utility item without any visible UI and automatically manages Omni-Channel login state.
+        
+        Requirements:
+        - Requires AutoLoginOmniChannelController Apex class to be deployed
+        - Users must have access to the Apex class via permission set
+        - Users must have read access to UserServicePresence object
+        
+        Note: Hanging UserServicePresence records (stale records with IsCurrentState = true) can prevent auto-login from working. Administrators should check for and clean up stale records if auto-login is not working as expected.
     </aura:description>
 </aura:documentation>

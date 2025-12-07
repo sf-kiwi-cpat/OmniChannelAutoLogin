@@ -39,5 +39,46 @@ public with sharing class AutoLoginOmniChannelController {
             return false;
         }
     }
+    
+    /**
+     * Get the first ServicePresenceStatus with IsAway = true
+     * @return String The ID of the first away status found, or null if none found
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getAwayStatusId() {
+        try {
+            // Check CRUD permissions before SOQL query
+            if (!Schema.sObjectType.ServicePresenceStatus.isAccessible()) {
+                System.debug('User does not have read access to ServicePresenceStatus');
+                return null;
+            }
+            
+            // Check field-level permissions
+            Map<String, Schema.SObjectField> fieldMap = Schema.sObjectType.ServicePresenceStatus.fields.getMap();
+            if (!fieldMap.get('Id').getDescribe().isAccessible() ||
+                !fieldMap.get('IsAway').getDescribe().isAccessible()) {
+                System.debug('User does not have read access to required fields on ServicePresenceStatus');
+                return null;
+            }
+            
+            // Query for the first ServicePresenceStatus with IsAway = true
+            List<ServicePresenceStatus> awayStatuses = [
+                SELECT Id 
+                FROM ServicePresenceStatus 
+                WHERE IsAway = true 
+                LIMIT 1
+            ];
+            
+            // Return the ID if found, otherwise null
+            if (!awayStatuses.isEmpty()) {
+                return awayStatuses[0].Id;
+            }
+            return null;
+        } catch (Exception e) {
+            // Log error and return null
+            System.debug('Error getting away status: ' + e.getMessage());
+            return null;
+        }
+    }
 }
 
